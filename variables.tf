@@ -22,6 +22,57 @@ variable "resource_group_name" {
   description = "The resource group where the resources will be deployed."
 }
 
+variable "public_network_access" {
+  type        = string
+  default     = null
+  description = "Whether or not public network access is allowed for this resource. For security reasons it should be disabled. If not specified, it will be disabled by default if private endpoints are set.'"
+
+  validation {
+    condition     = contains(["Enabled", "Disabled"], var.sku_name)
+    error_message = "The allowed values are `Enabled` or `Disabled`."
+  }
+}
+
+variable "purge_protection_enabled" {
+  type        = bool
+  default     = true
+  description = "Specifies whether protection against purge is enabled for this Key Vault. Note once enabled this cannot be disabled."
+}
+
+variable "soft_delete_retention_days" {
+  type        = number
+  default     = null
+  description = <<DESCRIPTION
+The amount of time in days that the configuration store will be retained when it is soft deleted.
+DESCRIPTION
+
+  validation {
+    condition     = var.soft_delete_retention_days == null ? true : var.soft_delete_retention_days >= 1 && var.soft_delete_retention_days <= 7
+    error_message = "Value must be between 1 and 7."
+  }
+  validation {
+    condition     = var.soft_delete_retention_days == null ? true : ceil(var.soft_delete_retention_days) == var.soft_delete_retention_days
+    error_message = "Value must be an integer."
+  }
+}
+
+variable "sku" {
+  type        = string
+  default     = "Standard"
+  description = "The SKU name of the Key Vault. Default is `premium`. Possible values are `Free` and `Standard` ."
+
+  validation {
+    condition     = contains(["Standard", "Free"], var.sku_name)
+    error_message = "The SKU name must be either `Free` or `Standard`."
+  }
+}
+
+variable "local_auth_enabled" {
+  type        = bool
+  default     = false
+  description = "Specifies whether local authentication methods to be enabled."
+}
+
 # required AVM interfaces
 # remove only if not supported by the resource
 # tflint-ignore: terraform_unused_declarations

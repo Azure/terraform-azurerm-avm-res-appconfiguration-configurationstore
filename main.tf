@@ -4,9 +4,9 @@ resource "azurerm_app_configuration" "this" {
   location            = var.location
   sku                 = var.sku
   local_auth_enabled  = var.local_auth_enabled
-  public_network_access           = var.public_network_access
-  purge_protection_enabled        = var.purge_protection_enabled
-  soft_delete_retention_days      = var.soft_delete_retention_days
+  public_network_access           = var.public_network_access == null ? (var.private_endpoints == {} ? "Enabled" : "Disabled") : var.public_network_access 
+  purge_protection_enabled        = var.sku == "Free" ? false : var.purge_protection_enabled
+  soft_delete_retention_days      = var.sku == "Free" ? 0 : var.soft_delete_retention_days
   tags                            = var.tags
 }
 
