@@ -62,7 +62,7 @@ module "appconfigurationstore" {
   name                = module.naming.app_configuration.name_unique
   resource_group_name = azurerm_resource_group.this.name
   sku                 = "standard"
-  enable_telemetry    = false #var.enable_telemetry
+  enable_telemetry    = var.enable_telemetry
   customer_managed_key = {
     key_vault_resource_id = ""
     key_name              = ""
