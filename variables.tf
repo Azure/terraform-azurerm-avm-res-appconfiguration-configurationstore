@@ -270,6 +270,7 @@ variable "role_assignments" {
     condition                              = optional(string, null)
     condition_version                      = optional(string, null)
     delegated_managed_identity_resource_id = optional(string, null)
+    principal_type                         = optional(string, null)
   }))
   default     = {}
   description = <<DESCRIPTION
@@ -324,6 +325,6 @@ variable "subscription_id" {
 # tflint-ignore: terraform_unused_declarations
 variable "tags" {
   type        = map(string)
-  default     = {}
+  default     = null
   description = "(Optional) Tags of the resource."
 }

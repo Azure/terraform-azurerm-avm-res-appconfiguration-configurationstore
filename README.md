@@ -40,6 +40,7 @@ The following resources are used by this module:
 
 - [azapi_resource.appconfigstore](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource) (resource)
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
+- [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
 - [azurerm_private_endpoint.this_managed_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint.this_unmanaged_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint_application_security_group_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint_application_security_group_association) (resource)
@@ -334,6 +335,7 @@ map(object({
     condition                              = optional(string, null)
     condition_version                      = optional(string, null)
     delegated_managed_identity_resource_id = optional(string, null)
+    principal_type                         = optional(string, null)
   }))
 ```
 
@@ -369,7 +371,7 @@ Description: (Optional) Tags of the resource.
 
 Type: `map(string)`
 
-Default: `{}`
+Default: `null`
 
 ## Outputs
 
@@ -391,13 +393,13 @@ Description: The resource ID of the app configuration store.
 
 The following Modules are called:
 
-### <a name="module_key-values"></a> [key-values](#module\_key-values)
+### <a name="module_key_value"></a> [key\_value](#module\_key\_value)
 
-Source: ./modules/key-value
+Source: ./modules/key_value
 
 Version:
 
-### <a name="module_replicas"></a> [replicas](#module\_replicas)
+### <a name="module_replica"></a> [replica](#module\_replica)
 
 Source: ./modules/replica
 
