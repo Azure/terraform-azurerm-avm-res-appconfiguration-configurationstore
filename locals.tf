@@ -30,5 +30,12 @@ locals {
       }
     ]
   ]) : "${assoc.pe_key}-${assoc.asg_key}" => assoc }
+  cmk_keyvault_name                  = var.customer_managed_key != null ? element(split("/", var.customer_managed_key.key_vault_resource_id), 8) : null
+  cmk_uai_name                       = var.customer_managed_key != null ? element(split("/", var.customer_managed_key.user_assigned_identity.resource_id), 8) : null
+  cmk_uai_rg_name                    = var.customer_managed_key != null ? element(split("/", var.customer_managed_key.user_assigned_identity.resource_id), 4) : null
+  cmk_uai_subscription_id            = var.customer_managed_key != null ? element(split("/", var.customer_managed_key.user_assigned_identity.resource_id), 2) : null
+  cmk_uai_client_id                  = var.customer_managed_key != null ? data.azapi_resource.user_assigned_identity[0].output.properties.clientId : null
+  normalized_cmk_key_url             = var.customer_managed_key != null ? "https://${local.cmk_keyvault_name}.vault.azure.net/keys/${var.customer_managed_key.key_name}" : null
   role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
+  subscription_id                    = coalesce(var.subscription_id, data.azurerm_client_config.this.subscription_id)
 }

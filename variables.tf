@@ -9,10 +9,20 @@ variable "name" {
   description = "The name of the this resource."
 
   validation {
-    condition     = can(regex("TODO", var.name))
-    error_message = "The name must be TODO." # TODO remove the example below once complete:
-    #condition     = can(regex("^[a-z0-9]{5,50}$", var.name))
-    #error_message = "The name must be between 5 and 50 characters long and can only contain lowercase letters and numbers."
+    condition     = can(regex("^[a-zA-Z0-9-]{5,50}$", var.name))
+    error_message = "The name must be between 5 and 50 characters long and can only contain letters, numbers and dashes."
+  }
+  validation {
+    error_message = "The name must not contain two consecutive dashes"
+    condition     = !can(regex("--", var.name))
+  }
+  validation {
+    error_message = "The name must start with a letter"
+    condition     = can(regex("^[a-zA-Z]", var.name))
+  }
+  validation {
+    error_message = "The name must end with a letter or number"
+    condition     = can(regex("[a-zA-Z0-9]$", var.name))
   }
 }
 
@@ -25,11 +35,12 @@ variable "resource_group_name" {
 variable "public_network_access" {
   type        = string
   default     = null
-  description = "Whether or not public network access is allowed for this resource. For security reasons it should be disabled. If not specified, it will be disabled by default if private endpoints are set.'"
+  nullable    = true
+  description = "Whether or not public network access is allowed for this resource. For security reasons it should be disabled. If not specified, it will be disabled by default if private endpoint is enabled .'"
 
   validation {
-    condition     = contains(["Enabled", "Disabled"], var.sku_name)
-    error_message = "The allowed values are `Enabled` or `Disabled`."
+    condition     = var.public_network_access != null ? contains(["Enabled", "Disabled"], var.public_network_access) : var.public_network_access == null
+    error_message = "The allowed values are `Enabled` or `Disabled` ."
   }
 }
 
@@ -41,41 +52,75 @@ variable "purge_protection_enabled" {
 
 variable "soft_delete_retention_days" {
   type        = number
-  default     = null
+  default     = 1
   description = <<DESCRIPTION
-The amount of time in days that the configuration store will be retained when it is soft deleted.
+The amount of time in days that the configuration store will be retained when it is soft deleted. By default this is 1 day and maximum is 7 days. Applicable only when sku is not `Free`.
 DESCRIPTION
 
   validation {
-    condition     = var.soft_delete_retention_days == null ? true : var.soft_delete_retention_days >= 1 && var.soft_delete_retention_days <= 7
+    condition     = var.soft_delete_retention_days >= 1 && var.soft_delete_retention_days <= 7
     error_message = "Value must be between 1 and 7."
   }
   validation {
-    condition     = var.soft_delete_retention_days == null ? true : ceil(var.soft_delete_retention_days) == var.soft_delete_retention_days
+    condition     = ceil(var.soft_delete_retention_days) == var.soft_delete_retention_days
     error_message = "Value must be an integer."
   }
 }
 
 variable "sku" {
   type        = string
-  default     = "Standard"
-  description = "The SKU name of the Key Vault. Default is `premium`. Possible values are `Free` and `Standard` ."
+  default     = "standard"
+  description = "The SKU name of the App Configuration Store. Default is `Free`. Possible values are `Free` and `Standard` ."
 
   validation {
-    condition     = contains(["Standard", "Free"], var.sku_name)
-    error_message = "The SKU name must be either `Free` or `Standard`."
+    condition     = contains(["standard", "free", "premium"], var.sku)
+    error_message = "The SKU name must be either `free` or `standard` or `premium`."
   }
 }
 
-variable "local_auth_enabled" {
+# variable "local_auth_enabled" {
+#   type        = bool
+#   default     = false
+#   description = "Specifies whether local authentication methods to be enabled."
+# }
+
+variable "local_auth_disabled" {
   type        = bool
-  default     = false
+  default     = true
   description = "Specifies whether local authentication methods to be enabled."
 }
 
-# required AVM interfaces
-# remove only if not supported by the resource
-# tflint-ignore: terraform_unused_declarations
+variable "create_mode" {
+  type        = string
+  default     = "Default"
+  description = "Optional. Indicates whether the configuration store need to be recovered. Possible values are Default, Recover."
+
+  validation {
+    condition     = contains(["Default", "Recover"], var.create_mode)
+    error_message = "The create mode must be either `Default` or `Recover`."
+  }
+}
+
+variable "replicas" {
+  type = map(object({
+    name     = string
+    location = string
+  }))
+  default     = {}
+  description = "values for the replicas"
+}
+
+variable "key_values" {
+  type = map(object({
+    name         = string
+    content_type = string
+    value        = string
+    tags         = optional(map(string), null)
+  }))
+  default     = {}
+  description = "A mpa of key-values to be added in the configuration store."
+}
+
 variable "customer_managed_key" {
   type = object({
     key_vault_resource_id = string
@@ -88,10 +133,10 @@ variable "customer_managed_key" {
   default     = null
   description = <<DESCRIPTION
 A map describing customer-managed keys to associate with the resource. This includes the following properties:
-- `key_vault_resource_id` - The resource ID of the Key Vault where the key is stored.
-- `key_name` - The name of the key.
-- `key_version` - (Optional) The version of the key. If not specified, the latest version is used.
-- `user_assigned_identity` - (Optional) An object representing a user-assigned identity with the following properties:
+- `key_vault_resource_id` - (Required) The resource ID of the Key Vault where the key is stored.
+- `key_name` - (Required) The name of the key.
+- `key_version` - Unsupported.
+- `user_assigned_identity` - (Required) An object representing a user-assigned identity with the following properties:
   - `resource_id` - The resource ID of the user-assigned identity.
 DESCRIPTION  
 }
@@ -277,9 +322,15 @@ DESCRIPTION
   nullable    = false
 }
 
+variable "subscription_id" {
+  type        = string
+  default     = null
+  description = "(Optional) Subscription ID passed in by an external process.  If this is not supplied, then the configuration either needs to include the subscription ID, or needs to be supplied properties to create the subscription."
+}
+
 # tflint-ignore: terraform_unused_declarations
 variable "tags" {
   type        = map(string)
-  default     = null
+  default     = {}
   description = "(Optional) Tags of the resource."
 }

@@ -1,3 +1,13 @@
+output "name" {
+  description = "The resource name of the app configuration store."
+  value       = azapi_resource.appconfigstore.name
+}
+
+output "resource_id" {
+  description = "The resource ID of the app configuration store."
+  value       = azapi_resource.appconfigstore.id
+}
+
 output "private_endpoints" {
   description = <<DESCRIPTION
   A map of the private endpoints created.
