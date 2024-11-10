@@ -32,64 +32,6 @@ variable "resource_group_name" {
   description = "The resource group where the resources will be deployed."
 }
 
-variable "public_network_access" {
-  type        = string
-  default     = null
-  nullable    = true
-  description = "Whether or not public network access is allowed for this resource. For security reasons it should be disabled. If not specified, it will be disabled by default if private endpoint is enabled .'"
-
-  validation {
-    condition     = var.public_network_access != null ? contains(["Enabled", "Disabled"], var.public_network_access) : var.public_network_access == null
-    error_message = "The allowed values are `Enabled` or `Disabled` ."
-  }
-}
-
-variable "purge_protection_enabled" {
-  type        = bool
-  default     = true
-  description = "Specifies whether protection against purge is enabled for this Key Vault. Note once enabled this cannot be disabled."
-}
-
-variable "soft_delete_retention_days" {
-  type        = number
-  default     = 1
-  description = <<DESCRIPTION
-The amount of time in days that the configuration store will be retained when it is soft deleted. By default this is 1 day and maximum is 7 days. Applicable only when sku is not `Free`.
-DESCRIPTION
-
-  validation {
-    condition     = var.soft_delete_retention_days >= 1 && var.soft_delete_retention_days <= 7
-    error_message = "Value must be between 1 and 7."
-  }
-  validation {
-    condition     = ceil(var.soft_delete_retention_days) == var.soft_delete_retention_days
-    error_message = "Value must be an integer."
-  }
-}
-
-variable "sku" {
-  type        = string
-  default     = "standard"
-  description = "The SKU name of the App Configuration Store. Default is `Free`. Possible values are `Free` and `Standard` ."
-
-  validation {
-    condition     = contains(["standard", "free", "premium"], var.sku)
-    error_message = "The SKU name must be either `free` or `standard` or `premium`."
-  }
-}
-
-# variable "local_auth_enabled" {
-#   type        = bool
-#   default     = false
-#   description = "Specifies whether local authentication methods to be enabled."
-# }
-
-variable "local_auth_disabled" {
-  type        = bool
-  default     = true
-  description = "Specifies whether local authentication methods to be enabled."
-}
-
 variable "create_mode" {
   type        = string
   default     = "Default"
@@ -99,26 +41,6 @@ variable "create_mode" {
     condition     = contains(["Default", "Recover"], var.create_mode)
     error_message = "The create mode must be either `Default` or `Recover`."
   }
-}
-
-variable "replicas" {
-  type = map(object({
-    name     = string
-    location = string
-  }))
-  default     = {}
-  description = "values for the replicas"
-}
-
-variable "key_values" {
-  type = map(object({
-    name         = string
-    content_type = string
-    value        = string
-    tags         = optional(map(string), null)
-  }))
-  default     = {}
-  description = "A mpa of key-values to be added in the configuration store."
 }
 
 variable "customer_managed_key" {
@@ -195,6 +117,23 @@ For more information see <https://aka.ms/avm/telemetryinfo>.
 If it is set to false, then no telemetry will be collected.
 DESCRIPTION
   nullable    = false
+}
+
+variable "key_values" {
+  type = map(object({
+    name         = string
+    content_type = string
+    value        = string
+    tags         = optional(map(string), null)
+  }))
+  default     = {}
+  description = "A mpa of key-values to be added in the configuration store."
+}
+
+variable "local_auth_disabled" {
+  type        = bool
+  default     = true
+  description = "Specifies whether local authentication methods to be enabled."
 }
 
 variable "lock" {
@@ -296,6 +235,32 @@ variable "private_endpoints_manage_dns_zone_group" {
   nullable    = false
 }
 
+variable "public_network_access" {
+  type        = string
+  default     = null
+  description = "Whether or not public network access is allowed for this resource. For security reasons it should be disabled. If not specified, it will be disabled by default if private endpoint is enabled .'"
+
+  validation {
+    condition     = var.public_network_access != null ? contains(["Enabled", "Disabled"], var.public_network_access) : var.public_network_access == null
+    error_message = "The allowed values are `Enabled` or `Disabled` ."
+  }
+}
+
+variable "purge_protection_enabled" {
+  type        = bool
+  default     = true
+  description = "Specifies whether protection against purge is enabled for this Key Vault. Note once enabled this cannot be disabled."
+}
+
+variable "replicas" {
+  type = map(object({
+    name     = string
+    location = string
+  }))
+  default     = {}
+  description = "values for the replicas"
+}
+
 variable "role_assignments" {
   type = map(object({
     role_definition_id_or_name             = string
@@ -320,6 +285,34 @@ A map of role assignments to create on this resource. The map key is deliberatel
 > Note: only set `skip_service_principal_aad_check` to true if you are assigning a role to a service principal.
 DESCRIPTION
   nullable    = false
+}
+
+variable "sku" {
+  type        = string
+  default     = "standard"
+  description = "The SKU name of the App Configuration Store. Default is `Free`. Possible values are `Free` and `Standard` ."
+
+  validation {
+    condition     = contains(["standard", "free", "premium"], var.sku)
+    error_message = "The SKU name must be either `free` or `standard` or `premium`."
+  }
+}
+
+variable "soft_delete_retention_days" {
+  type        = number
+  default     = 1
+  description = <<DESCRIPTION
+The amount of time in days that the configuration store will be retained when it is soft deleted. By default this is 1 day and maximum is 7 days. Applicable only when sku is not `Free`.
+DESCRIPTION
+
+  validation {
+    condition     = var.soft_delete_retention_days >= 1 && var.soft_delete_retention_days <= 7
+    error_message = "Value must be between 1 and 7."
+  }
+  validation {
+    condition     = ceil(var.soft_delete_retention_days) == var.soft_delete_retention_days
+    error_message = "Value must be an integer."
+  }
 }
 
 variable "subscription_id" {

@@ -1,7 +1,7 @@
 <!-- BEGIN_TF_DOCS -->
 # Default example
 
-This deploys the module in its simplest form.
+This deploys the module with private endpoint enabled.
 
 ```hcl
 terraform {
@@ -9,7 +9,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.74"
+      version = "~> 4.6"
     }
     modtm = {
       source  = "azure/modtm"
@@ -24,14 +24,15 @@ terraform {
 
 provider "azurerm" {
   features {}
+  subscription_id = "843d07cf-6f9e-4d67-8977-79e491c12ab8"
 }
 
 
 ## Section to provide a random Azure region for the resource group
 # This allows us to randomize the region for the resource group.
 module "regions" {
-  source  = "Azure/regions/azurerm"
-  version = "~> 0.3"
+  source  = "Azure/avm-utl-regions/azurerm"
+  version = "~> 0.1"
 }
 
 # This allows us to randomize the region for the resource group.
@@ -57,15 +58,42 @@ resource "azurerm_resource_group" "this" {
 # Do not specify location here due to the randomization above.
 # Leaving location as `null` will cause the module to use the resource group location
 # with a data source.
-module "test" {
+module "appconfigurationstore" {
   source = "../../"
-  # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
+  # source             = "Azure/avm-res-appconfiguration-configurationstore/azurerm"
   # ...
   location            = azurerm_resource_group.this.location
-  name                = "TODO" # TODO update with module.naming.<RESOURCE_TYPE>.name_unique
+  name                = module.naming.app_configuration.name_unique
   resource_group_name = azurerm_resource_group.this.name
-
-  enable_telemetry = var.enable_telemetry # see variables.tf
+  sku                 = "standard"
+  enable_telemetry    = false #var.enable_telemetry
+  customer_managed_key = {
+    key_vault_resource_id = "/subscriptions/843d07cf-6f9e-4d67-8977-79e491c12ab8/resourceGroups/deskav_rg/providers/Microsoft.KeyVault/vaults/desakv"
+    key_name              = "samplekey"
+    user_assigned_identity = {
+      resource_id = "/subscriptions/843d07cf-6f9e-4d67-8977-79e491c12ab8/resourcegroups/deskav_rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/desakvuai"
+    }
+  }
+  managed_identities = {
+    system_assigned = true
+  }
+  replicas = {
+    replica0 = {
+      name     = "replica0xyz"
+      location = "eastus"
+    }
+    replica1 = {
+      name     = "replica1xyz"
+      location = "westus"
+    }
+  }
+  key_values = {
+    key0 = {
+      name         = "key0"
+      content_type = "text"
+      value        = "value0"
+    }
+  }
 }
 ```
 
@@ -76,19 +104,11 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.5)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 3.74)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.6)
 
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
-
-## Providers
-
-The following providers are used by this module:
-
-- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (~> 3.74)
-
-- <a name="provider_random"></a> [random](#provider\_random) (~> 3.5)
 
 ## Resources
 
@@ -124,6 +144,12 @@ No outputs.
 
 The following Modules are called:
 
+### <a name="module_appconfigurationstore"></a> [appconfigurationstore](#module\_appconfigurationstore)
+
+Source: ../../
+
+Version:
+
 ### <a name="module_naming"></a> [naming](#module\_naming)
 
 Source: Azure/naming/azurerm
@@ -132,15 +158,9 @@ Version: ~> 0.3
 
 ### <a name="module_regions"></a> [regions](#module\_regions)
 
-Source: Azure/regions/azurerm
+Source: Azure/avm-utl-regions/azurerm
 
-Version: ~> 0.3
-
-### <a name="module_test"></a> [test](#module\_test)
-
-Source: ../../
-
-Version:
+Version: ~> 0.1
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

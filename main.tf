@@ -11,17 +11,7 @@
 } */
 
 resource "azapi_resource" "appconfigstore" {
-  type      = "Microsoft.AppConfiguration/configurationStores@2023-03-01"
-  name      = var.name
-  parent_id = "/subscriptions/${local.subscription_id}/resourceGroups/${var.resource_group_name}"
-  tags      = var.tags
-  dynamic "identity" {
-    for_each = local.managed_identities.system_assigned_user_assigned
-    content {
-      type         = identity.value.type
-      identity_ids = identity.value.user_assigned_resource_ids
-    }
-  }
+  type = "Microsoft.AppConfiguration/configurationStores@2023-03-01"
   body = {
     location = var.location
     properties = {
@@ -39,6 +29,18 @@ resource "azapi_resource" "appconfigstore" {
     }
     sku = {
       name = var.sku
+    }
+  }
+  name      = var.name
+  parent_id = "/subscriptions/${local.subscription_id}/resourceGroups/${var.resource_group_name}"
+  tags      = var.tags
+
+  dynamic "identity" {
+    for_each = local.managed_identities.system_assigned_user_assigned
+
+    content {
+      type         = identity.value.type
+      identity_ids = identity.value.user_assigned_resource_ids
     }
   }
 }
