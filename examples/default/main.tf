@@ -5,10 +5,6 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.6"
     }
-    modtm = {
-      source  = "azure/modtm"
-      version = "~> 0.3"
-    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.5"
@@ -59,5 +55,5 @@ module "appconfigurationstore" {
   location            = azurerm_resource_group.this.location
   name                = module.naming.app_configuration.name_unique
   resource_group_name = azurerm_resource_group.this.name
-  enable_telemetry    = false #var.enable_telemetry
+  enable_telemetry    = var.enable_telemetry
 }

@@ -11,10 +11,6 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.6"
     }
-    modtm = {
-      source  = "azure/modtm"
-      version = "~> 0.3"
-    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.5"
@@ -66,12 +62,12 @@ module "appconfigurationstore" {
   name                = module.naming.app_configuration.name_unique
   resource_group_name = azurerm_resource_group.this.name
   sku                 = "standard"
-  enable_telemetry    = false #var.enable_telemetry
+  enable_telemetry    = var.enable_telemetry
   customer_managed_key = {
-    key_vault_resource_id = "/subscriptions/843d07cf-6f9e-4d67-8977-79e491c12ab8/resourceGroups/deskav_rg/providers/Microsoft.KeyVault/vaults/desakv"
-    key_name              = "samplekey"
+    key_vault_resource_id = ""
+    key_name              = ""
     user_assigned_identity = {
-      resource_id = "/subscriptions/843d07cf-6f9e-4d67-8977-79e491c12ab8/resourcegroups/deskav_rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/desakvuai"
+      resource_id = ""
     }
   }
 }
@@ -85,8 +81,6 @@ The following requirements are needed by this module:
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.5)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.6)
-
-- <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
 
