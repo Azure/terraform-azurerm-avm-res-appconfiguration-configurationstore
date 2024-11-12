@@ -14,7 +14,7 @@ The following requirements are needed by this module:
 
 The following resources are used by this module:
 
-- [azapi_resource.keyvaules](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource.keyvalues](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -47,7 +47,12 @@ Type: `string`
 
 ### <a name="input_value"></a> [value](#input\_value)
 
-Description: Value of the key
+Description: A map of key value to be created. The following properties can be specified:
+
+- `name` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.
+- `content_type` - (Optional) Specifies the content type of the key-value resources. For feature flag, the value should be application/vnd.microsoft.appconfig.ff+json;charset=utf-8. For Key Value reference, the value should be application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8. Otherwise, it's optional.
+- `value` - (Required) Specifies the values of the key-value resources. For Key Vault Ref, the value should be the Keyvault secret url provided in this format: Format should be https://{vault-name}.{vault-DNS-suffix}/secrets/{secret-name}/{secret-version}. Secret version is optional.
+- `tags` - (Optional) Adds tags for the key-value resources
 
 Type: `string`
 

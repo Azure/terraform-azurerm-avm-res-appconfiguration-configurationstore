@@ -11,7 +11,7 @@
 } */
 
 resource "azapi_resource" "appconfigstore" {
-  type = "Microsoft.AppConfiguration/configurationStores@2023-03-01"
+  type = "Microsoft.AppConfiguration/configurationStores@2024-05-01"
   body = {
     location = var.location
     properties = {
@@ -26,6 +26,10 @@ resource "azapi_resource" "appconfigstore" {
       } : {}
       publicNetworkAccess       = var.public_network_access == null ? (length(var.private_endpoints) == 0 ? "Enabled" : "Disabled") : var.public_network_access
       softDeleteRetentionInDays = var.sku == "free" ? 0 : var.soft_delete_retention_days
+      dataPlaneProxy = {
+        authenticationMode    = var.data_plane_authentication_mode
+        privateLinkDelegation = "Disabled"
+      }
     }
     sku = {
       name = var.sku
@@ -64,7 +68,7 @@ module "key_value" {
   }
   content_type = each.value.content_type
   tags         = each.value.tags
-  value        = each.value.value
+  value        = each.value.value #each.value.content_type == "application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8" ?  "{ \"uri\":\"${each.value.value}\" }" : "${each.value.value}"
 }
 
 resource "azurerm_management_lock" "this" {

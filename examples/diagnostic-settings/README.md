@@ -1,7 +1,7 @@
 <!-- BEGIN_TF_DOCS -->
 # Default example
 
-This deploys the module with private endpoint enabled.
+This deploys the module in its simplest form.
 
 ```hcl
 terraform {
@@ -50,22 +50,9 @@ resource "azurerm_resource_group" "this" {
   name     = module.naming.resource_group.name_unique
 }
 
-resource "azurerm_virtual_network" "this" {
-  address_space       = ["192.168.0.0/24"]
+resource "azurerm_log_analytics_workspace" "this" {
   location            = azurerm_resource_group.this.location
-  name                = module.naming.virtual_network.name_unique
-  resource_group_name = azurerm_resource_group.this.name
-}
-
-resource "azurerm_subnet" "this" {
-  address_prefixes     = ["192.168.0.0/24"]
-  name                 = module.naming.subnet.name_unique
-  resource_group_name  = azurerm_resource_group.this.name
-  virtual_network_name = azurerm_virtual_network.this.name
-}
-
-resource "azurerm_private_dns_zone" "this" {
-  name                = "privatelink.azconfig.io"
+  name                = module.naming.log_analytics_workspace.name_unique
   resource_group_name = azurerm_resource_group.this.name
 }
 
@@ -77,26 +64,14 @@ module "appconfigurationstore" {
   source = "../../"
   # source             = "Azure/avm-res-appconfiguration-configurationstore/azurerm"
   # ...
-  location              = azurerm_resource_group.this.location
-  name                  = module.naming.app_configuration.name_unique
-  resource_group_name   = azurerm_resource_group.this.name
-  sku                   = "standard"
-  enable_telemetry      = var.enable_telemetry
-  public_network_access = "Enabled" # add if you need public access as well when private endpoint is enabled.
-  managed_identities = {
-    system_assigned = true
-  }
-  private_endpoints = {
-    primary = {
-      private_dns_zone_resource_ids = [azurerm_private_dns_zone.this.id]
-      subnet_resource_id            = azurerm_subnet.this.id
-    }
-  }
-  key_values = {
-    key0 = {
-      name         = "key0"
-      content_type = "text"
-      value        = "value0"
+  location            = azurerm_resource_group.this.location
+  name                = module.naming.app_configuration.name_unique
+  resource_group_name = azurerm_resource_group.this.name
+  enable_telemetry    = var.enable_telemetry
+  diagnostic_settings = {
+    to_la = {
+      name                  = "to-la"
+      workspace_resource_id = azurerm_log_analytics_workspace.this.id
     }
   }
 }
@@ -117,10 +92,8 @@ The following requirements are needed by this module:
 
 The following resources are used by this module:
 
-- [azurerm_private_dns_zone.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_dns_zone) (resource)
+- [azurerm_log_analytics_workspace.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_workspace) (resource)
 - [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
-- [azurerm_subnet.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
-- [azurerm_virtual_network.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
 
 <!-- markdownlint-disable MD013 -->

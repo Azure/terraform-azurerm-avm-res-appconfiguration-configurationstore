@@ -111,6 +111,14 @@ object({
 
 Default: `null`
 
+### <a name="input_data_plane_authentication_mode"></a> [data\_plane\_authentication\_mode](#input\_data\_plane\_authentication\_mode)
+
+Description: n/a
+
+Type: `string`
+
+Default: `"Pass-through"`
+
 ### <a name="input_diagnostic_settings"></a> [diagnostic\_settings](#input\_diagnostic\_settings)
 
 Description: A map of diagnostic settings to create on the Key Vault. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
@@ -157,14 +165,19 @@ Default: `true`
 
 ### <a name="input_key_values"></a> [key\_values](#input\_key\_values)
 
-Description: A mpa of key-values to be added in the configuration store.
+Description: A map of key value to be created. The following properties can be specified:
+
+- `name` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.
+- `content_type` - (Optional) Specifies the content type of the key-value resources. For feature flag, the value should be application/vnd.microsoft.appconfig.ff+json;charset=utf-8. For Key Value reference, the value should be application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8. Otherwise, it's optional.
+- `value` - (Required) Specifies the values of the key-value resources. For Key Vault Ref, the value should be the Keyvault secret url provided in this format: Format should be https://{vault-name}.{vault-DNS-suffix}/secrets/{secret-name}/{secret-version}. Secret version is optional.
+- `tags` - (Optional) Adds tags for the key-value resources
 
 Type:
 
 ```hcl
 map(object({
     name         = string
-    content_type = string
+    content_type = optional(string)
     value        = string
     tags         = optional(map(string), null)
   }))

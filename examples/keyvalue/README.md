@@ -61,33 +61,17 @@ module "appconfigurationstore" {
   location            = azurerm_resource_group.this.location
   name                = module.naming.app_configuration.name_unique
   resource_group_name = azurerm_resource_group.this.name
-  sku                 = "standard"
+  sku                 = "free"
   enable_telemetry    = var.enable_telemetry
-  customer_managed_key = {
-    key_vault_resource_id = ""
-    key_name              = ""
-    user_assigned_identity = {
-      resource_id = ""
-    }
-  }
-  managed_identities = {
-    system_assigned = true
-  }
-  replicas = {
-    replica0 = {
-      name     = "replica0xyz"
-      location = "eastus"
-    }
-    replica1 = {
-      name     = "replica1xyz"
-      location = "westus"
-    }
-  }
   key_values = {
     key0 = {
-      name         = "key0"
-      content_type = "text"
-      value        = "value0"
+      name  = "key0$hello"
+      value = "value0"
+    }
+    key1 = {
+      name         = "key1$testdollar"
+      content_type = "application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8"
+      value        = "https://desakv.vault.azure.net/secrets/samplesecret"
     }
   }
 }
