@@ -55,5 +55,17 @@ module "appconfigurationstore" {
   location            = azurerm_resource_group.this.location
   name                = module.naming.app_configuration.name_unique
   resource_group_name = azurerm_resource_group.this.name
+  sku                 = "free"
   enable_telemetry    = var.enable_telemetry
+  key_values = {
+    key0 = {
+      name  = "key0$hello"
+      value = "value0"
+    }
+    key1 = {
+      name         = "key1$testdollar"
+      content_type = "application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8"
+      value        = "https://desakv.vault.azure.net/secrets/samplesecret"
+    }
+  }
 }

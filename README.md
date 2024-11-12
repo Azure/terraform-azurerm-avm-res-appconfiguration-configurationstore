@@ -7,7 +7,10 @@ Things to do:
 
 1. Set up a GitHub repo environment called `test`.
 1. Configure environment protection rule to ensure that approval is required before deploying to this environment.
-1. Install Docker Desktop to run tests
+1. Create a user-assigned managed identity in your test subscription.
+1. Create a role assignment for the managed identity on your test subscription, use the minimum required role.
+1. Configure federated identity credentials on the user assigned managed identity. Use the GitHub environment.
+1. Search and update TODOs within the code and remove the TODO comments once complete.
 
 > [!IMPORTANT]
 > As the overall AVM framework is not GA (generally available) yet - the CI framework and test automation is not fully functional and implemented across all supported languages yet - breaking changes are expected, and additional customer feedback is yet to be gathered and incorporated. Hence, modules **MUST NOT** be published at version `1.0.0` or higher at this time.
@@ -21,37 +24,32 @@ Things to do:
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.5)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.9)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 3.71)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (>= 1.13, < 3)
+
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.116, < 5)
 
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
 
-## Providers
-
-The following providers are used by this module:
-
-- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (~> 3.71)
-
-- <a name="provider_modtm"></a> [modtm](#provider\_modtm) (~> 0.3)
-
-- <a name="provider_random"></a> [random](#provider\_random) (~> 3.5)
-
 ## Resources
 
 The following resources are used by this module:
 
+- [azapi_resource.appconfigstore](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource) (resource)
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
+- [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
 - [azurerm_private_endpoint.this_managed_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint.this_unmanaged_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint_application_security_group_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint_application_security_group_association) (resource)
-- [azurerm_resource_group.TODO](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [modtm_telemetry.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/resources/telemetry) (resource)
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
+- [azapi_resource.user_assigned_identity](https://registry.terraform.io/providers/azure/azapi/latest/docs/data-sources/resource) (data source)
 - [azurerm_client_config.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
+- [azurerm_client_config.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
 - [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
 <!-- markdownlint-disable MD013 -->
@@ -81,13 +79,21 @@ Type: `string`
 
 The following input variables are optional (have default values):
 
+### <a name="input_create_mode"></a> [create\_mode](#input\_create\_mode)
+
+Description: Optional. Indicates whether the configuration store need to be recovered. Possible values are Default, Recover.
+
+Type: `string`
+
+Default: `"Default"`
+
 ### <a name="input_customer_managed_key"></a> [customer\_managed\_key](#input\_customer\_managed\_key)
 
 Description: A map describing customer-managed keys to associate with the resource. This includes the following properties:
-- `key_vault_resource_id` - The resource ID of the Key Vault where the key is stored.
-- `key_name` - The name of the key.
-- `key_version` - (Optional) The version of the key. If not specified, the latest version is used.
-- `user_assigned_identity` - (Optional) An object representing a user-assigned identity with the following properties:
+- `key_vault_resource_id` - (Required) The resource ID of the Key Vault where the key is stored.
+- `key_name` - (Required) The name of the key.
+- `key_version` - Unsupported.
+- `user_assigned_identity` - (Required) An object representing a user-assigned identity with the following properties:
   - `resource_id` - The resource ID of the user-assigned identity.
 
 Type:
@@ -104,6 +110,14 @@ object({
 ```
 
 Default: `null`
+
+### <a name="input_data_plane_authentication_mode"></a> [data\_plane\_authentication\_mode](#input\_data\_plane\_authentication\_mode)
+
+Description: n/a
+
+Type: `string`
+
+Default: `"Pass-through"`
 
 ### <a name="input_diagnostic_settings"></a> [diagnostic\_settings](#input\_diagnostic\_settings)
 
@@ -144,6 +158,36 @@ Default: `{}`
 Description: This variable controls whether or not telemetry is enabled for the module.  
 For more information see <https://aka.ms/avm/telemetryinfo>.  
 If it is set to false, then no telemetry will be collected.
+
+Type: `bool`
+
+Default: `true`
+
+### <a name="input_key_values"></a> [key\_values](#input\_key\_values)
+
+Description: A map of key value to be created. The following properties can be specified:
+
+- `name` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.
+- `content_type` - (Optional) Specifies the content type of the key-value resources. For feature flag, the value should be application/vnd.microsoft.appconfig.ff+json;charset=utf-8. For Key Value reference, the value should be application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8. Otherwise, it's optional.
+- `value` - (Required) Specifies the values of the key-value resources. For Key Vault Ref, the value should be the Keyvault secret url provided in this format: Format should be https://{vault-name}.{vault-DNS-suffix}/secrets/{secret-name}/{secret-version}. Secret version is optional.
+- `tags` - (Optional) Adds tags for the key-value resources
+
+Type:
+
+```hcl
+map(object({
+    name         = string
+    content_type = optional(string)
+    value        = string
+    tags         = optional(map(string), null)
+  }))
+```
+
+Default: `{}`
+
+### <a name="input_local_auth_disabled"></a> [local\_auth\_disabled](#input\_local\_auth\_disabled)
+
+Description: Specifies whether local authentication methods to be enabled.
 
 Type: `bool`
 
@@ -218,6 +262,7 @@ map(object({
       condition                              = optional(string, null)
       condition_version                      = optional(string, null)
       delegated_managed_identity_resource_id = optional(string, null)
+      principal_type                         = optional(string, null)
     })), {})
     lock = optional(object({
       kind = string
@@ -249,6 +294,37 @@ Type: `bool`
 
 Default: `true`
 
+### <a name="input_public_network_access"></a> [public\_network\_access](#input\_public\_network\_access)
+
+Description: Whether or not public network access is allowed for this resource. For security reasons it should be disabled. If not specified, it will be disabled by default if private endpoint is enabled .'
+
+Type: `string`
+
+Default: `null`
+
+### <a name="input_purge_protection_enabled"></a> [purge\_protection\_enabled](#input\_purge\_protection\_enabled)
+
+Description: Specifies whether protection against purge is enabled for this Key Vault. Note once enabled this cannot be disabled.
+
+Type: `bool`
+
+Default: `true`
+
+### <a name="input_replicas"></a> [replicas](#input\_replicas)
+
+Description: values for the replicas
+
+Type:
+
+```hcl
+map(object({
+    name     = string
+    location = string
+  }))
+```
+
+Default: `{}`
+
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
 Description: A map of role assignments to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
@@ -273,10 +349,35 @@ map(object({
     condition                              = optional(string, null)
     condition_version                      = optional(string, null)
     delegated_managed_identity_resource_id = optional(string, null)
+    principal_type                         = optional(string, null)
   }))
 ```
 
 Default: `{}`
+
+### <a name="input_sku"></a> [sku](#input\_sku)
+
+Description: The SKU name of the App Configuration Store. Default is `Free`. Possible values are `Free` and `Standard` .
+
+Type: `string`
+
+Default: `"standard"`
+
+### <a name="input_soft_delete_retention_days"></a> [soft\_delete\_retention\_days](#input\_soft\_delete\_retention\_days)
+
+Description: The amount of time in days that the configuration store will be retained when it is soft deleted. By default this is 1 day and maximum is 7 days. Applicable only when sku is not `Free`.
+
+Type: `number`
+
+Default: `1`
+
+### <a name="input_subscription_id"></a> [subscription\_id](#input\_subscription\_id)
+
+Description: (Optional) Subscription ID passed in by an external process.  If this is not supplied, then the configuration either needs to include the subscription ID, or needs to be supplied properties to create the subscription.
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
@@ -290,17 +391,33 @@ Default: `null`
 
 The following outputs are exported:
 
+### <a name="output_name"></a> [name](#output\_name)
+
+Description: The resource name of the app configuration store.
+
 ### <a name="output_private_endpoints"></a> [private\_endpoints](#output\_private\_endpoints)
 
 Description:   A map of the private endpoints created.
 
-### <a name="output_resource"></a> [resource](#output\_resource)
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
 
-Description: This is the full output for the resource.
+Description: The resource ID of the app configuration store.
 
 ## Modules
 
-No modules.
+The following Modules are called:
+
+### <a name="module_key_value"></a> [key\_value](#module\_key\_value)
+
+Source: ./modules/key_value
+
+Version:
+
+### <a name="module_replica"></a> [replica](#module\_replica)
+
+Source: ./modules/replica
+
+Version:
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

@@ -9,10 +9,20 @@ variable "name" {
   description = "The name of the this resource."
 
   validation {
-    condition     = can(regex("TODO", var.name))
-    error_message = "The name must be TODO." # TODO remove the example below once complete:
-    #condition     = can(regex("^[a-z0-9]{5,50}$", var.name))
-    #error_message = "The name must be between 5 and 50 characters long and can only contain lowercase letters and numbers."
+    condition     = can(regex("^[a-zA-Z0-9-]{5,50}$", var.name))
+    error_message = "The name must be between 5 and 50 characters long and can only contain letters, numbers and dashes."
+  }
+  validation {
+    error_message = "The name must not contain two consecutive dashes"
+    condition     = !can(regex("--", var.name))
+  }
+  validation {
+    error_message = "The name must start with a letter"
+    condition     = can(regex("^[a-zA-Z]", var.name))
+  }
+  validation {
+    error_message = "The name must end with a letter or number"
+    condition     = can(regex("[a-zA-Z0-9]$", var.name))
   }
 }
 
@@ -22,9 +32,17 @@ variable "resource_group_name" {
   description = "The resource group where the resources will be deployed."
 }
 
-# required AVM interfaces
-# remove only if not supported by the resource
-# tflint-ignore: terraform_unused_declarations
+variable "create_mode" {
+  type        = string
+  default     = "Default"
+  description = "Optional. Indicates whether the configuration store need to be recovered. Possible values are Default, Recover."
+
+  validation {
+    condition     = contains(["Default", "Recover"], var.create_mode)
+    error_message = "The create mode must be either `Default` or `Recover`."
+  }
+}
+
 variable "customer_managed_key" {
   type = object({
     key_vault_resource_id = string
@@ -37,12 +55,22 @@ variable "customer_managed_key" {
   default     = null
   description = <<DESCRIPTION
 A map describing customer-managed keys to associate with the resource. This includes the following properties:
-- `key_vault_resource_id` - The resource ID of the Key Vault where the key is stored.
-- `key_name` - The name of the key.
-- `key_version` - (Optional) The version of the key. If not specified, the latest version is used.
-- `user_assigned_identity` - (Optional) An object representing a user-assigned identity with the following properties:
+- `key_vault_resource_id` - (Required) The resource ID of the Key Vault where the key is stored.
+- `key_name` - (Required) The name of the key.
+- `key_version` - Unsupported.
+- `user_assigned_identity` - (Required) An object representing a user-assigned identity with the following properties:
   - `resource_id` - The resource ID of the user-assigned identity.
 DESCRIPTION  
+}
+
+variable "data_plane_authentication_mode" {
+  type    = string
+  default = "Pass-through"
+
+  validation {
+    condition     = contains(["Pass-through", "Local"], var.data_plane_authentication_mode)
+    error_message = "The authentication mode has to be `Pass-through` or `Local`."
+  }
 }
 
 variable "diagnostic_settings" {
@@ -101,6 +129,30 @@ DESCRIPTION
   nullable    = false
 }
 
+variable "key_values" {
+  type = map(object({
+    name         = string
+    content_type = optional(string)
+    value        = string
+    tags         = optional(map(string), null)
+  }))
+  default     = {}
+  description = <<DESCRIPTION
+A map of key value to be created. The following properties can be specified:
+
+- `name` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.
+- `content_type` - (Optional) Specifies the content type of the key-value resources. For feature flag, the value should be application/vnd.microsoft.appconfig.ff+json;charset=utf-8. For Key Value reference, the value should be application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8. Otherwise, it's optional.
+- `value` - (Required) Specifies the values of the key-value resources. For Key Vault Ref, the value should be the Keyvault secret url provided in this format: Format should be https://{vault-name}.{vault-DNS-suffix}/secrets/{secret-name}/{secret-version}. Secret version is optional.
+- `tags` - (Optional) Adds tags for the key-value resources
+DESCRIPTION
+}
+
+variable "local_auth_disabled" {
+  type        = bool
+  default     = true
+  description = "Specifies whether local authentication methods to be enabled."
+}
+
 variable "lock" {
   type = object({
     kind = string
@@ -116,7 +168,7 @@ DESCRIPTION
 
   validation {
     condition     = var.lock != null ? contains(["CanNotDelete", "ReadOnly"], var.lock.kind) : true
-    error_message = "The lock level must be one of: 'None', 'CanNotDelete', or 'ReadOnly'."
+    error_message = "Lock kind must be either `\"CanNotDelete\"` or `\"ReadOnly\"`."
   }
 }
 
@@ -147,6 +199,7 @@ variable "private_endpoints" {
       condition                              = optional(string, null)
       condition_version                      = optional(string, null)
       delegated_managed_identity_resource_id = optional(string, null)
+      principal_type                         = optional(string, null)
     })), {})
     lock = optional(object({
       kind = string
@@ -200,6 +253,32 @@ variable "private_endpoints_manage_dns_zone_group" {
   nullable    = false
 }
 
+variable "public_network_access" {
+  type        = string
+  default     = null
+  description = "Whether or not public network access is allowed for this resource. For security reasons it should be disabled. If not specified, it will be disabled by default if private endpoint is enabled .'"
+
+  validation {
+    condition     = var.public_network_access != null ? contains(["Enabled", "Disabled"], var.public_network_access) : var.public_network_access == null
+    error_message = "The allowed values are `Enabled` or `Disabled` ."
+  }
+}
+
+variable "purge_protection_enabled" {
+  type        = bool
+  default     = true
+  description = "Specifies whether protection against purge is enabled for this Key Vault. Note once enabled this cannot be disabled."
+}
+
+variable "replicas" {
+  type = map(object({
+    name     = string
+    location = string
+  }))
+  default     = {}
+  description = "values for the replicas"
+}
+
 variable "role_assignments" {
   type = map(object({
     role_definition_id_or_name             = string
@@ -209,6 +288,7 @@ variable "role_assignments" {
     condition                              = optional(string, null)
     condition_version                      = optional(string, null)
     delegated_managed_identity_resource_id = optional(string, null)
+    principal_type                         = optional(string, null)
   }))
   default     = {}
   description = <<DESCRIPTION
@@ -224,6 +304,40 @@ A map of role assignments to create on this resource. The map key is deliberatel
 > Note: only set `skip_service_principal_aad_check` to true if you are assigning a role to a service principal.
 DESCRIPTION
   nullable    = false
+}
+
+variable "sku" {
+  type        = string
+  default     = "standard"
+  description = "The SKU name of the App Configuration Store. Default is `Free`. Possible values are `Free` and `Standard` ."
+
+  validation {
+    condition     = contains(["standard", "free", "premium"], var.sku)
+    error_message = "The SKU name must be either `free` or `standard` or `premium`."
+  }
+}
+
+variable "soft_delete_retention_days" {
+  type        = number
+  default     = 1
+  description = <<DESCRIPTION
+The amount of time in days that the configuration store will be retained when it is soft deleted. By default this is 1 day and maximum is 7 days. Applicable only when sku is not `Free`.
+DESCRIPTION
+
+  validation {
+    condition     = var.soft_delete_retention_days >= 1 && var.soft_delete_retention_days <= 7
+    error_message = "Value must be between 1 and 7."
+  }
+  validation {
+    condition     = ceil(var.soft_delete_retention_days) == var.soft_delete_retention_days
+    error_message = "Value must be an integer."
+  }
+}
+
+variable "subscription_id" {
+  type        = string
+  default     = null
+  description = "(Optional) Subscription ID passed in by an external process.  If this is not supplied, then the configuration either needs to include the subscription ID, or needs to be supplied properties to create the subscription."
 }
 
 # tflint-ignore: terraform_unused_declarations

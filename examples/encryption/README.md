@@ -1,7 +1,7 @@
 <!-- BEGIN_TF_DOCS -->
 # Default example
 
-This deploys the module in its simplest form.
+This deploys the module with encryption enabled with Customer Managed Keys.
 
 ```hcl
 terraform {
@@ -61,7 +61,15 @@ module "appconfigurationstore" {
   location            = azurerm_resource_group.this.location
   name                = module.naming.app_configuration.name_unique
   resource_group_name = azurerm_resource_group.this.name
+  sku                 = "standard"
   enable_telemetry    = var.enable_telemetry
+  customer_managed_key = {
+    key_vault_resource_id = ""
+    key_name              = ""
+    user_assigned_identity = {
+      resource_id = ""
+    }
+  }
 }
 ```
 
